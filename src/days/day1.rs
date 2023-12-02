@@ -1,17 +1,16 @@
 use crate::Application;
-use std::io::Read;
-use std::{collections::BTreeMap, io::Cursor};
+use std::collections::BTreeMap;
 
 impl Application {
     pub fn day1(self) {
         if self.args.part == 1 {
-            self.part1();
+            self.d1p1();
         } else {
-            self.part2();
+            self.d1p2();
         }
     }
 
-    fn part1(self) {
+    fn d1p1(self) {
         let mut answer = 0;
         for line in self.input {
             let mut first = 0;
@@ -33,7 +32,7 @@ impl Application {
         println!("{}", answer);
     }
 
-    fn part2(self) {
+    fn d1p2(self) {
         let mut answer = 0;
         for line in self.input {
             // if it's stupid and it works, it's not stupid
