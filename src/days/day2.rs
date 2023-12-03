@@ -17,7 +17,7 @@ impl Application {
         if self.args.part == 1 {
             self.d2p1(map);
         } else {
-            self.d2p2();
+            self.d2p2(map);
         }
     }
 
@@ -37,7 +37,14 @@ impl Application {
         println!("{}", answer);
     }
 
-    fn d2p2(self) {}
+    fn d2p2(self, map: CubeHash) {
+        let mut answer = 0;
+        for (_num, entries) in map {
+            let power = find_power(entries);
+            answer += power;
+        }
+        println!("{answer}");
+    }
 }
 
 fn input_to_hash(input: &Vec<String>) -> CubeHash {
@@ -81,4 +88,26 @@ fn entries_are_valid(test: Cubes, entries: Vec<Cubes>) -> bool {
         }
     }
     return true;
+}
+
+fn find_power(entries: Vec<Cubes>) -> u64 {
+    // first, find the lowest possible needed for each of the games.
+    let mut lowest = Cubes {
+        red: 0,
+        green: 0,
+        blue: 0,
+    };
+    for cubes in entries {
+        if lowest.red < cubes.red {
+            lowest.red = cubes.red;
+        }
+        if lowest.green < cubes.green {
+            lowest.green = cubes.green;
+        }
+        if lowest.blue < cubes.blue {
+            lowest.blue = cubes.blue;
+        }
+    }
+    let output = lowest.red * lowest.green * lowest.blue;
+    return output as u64;
 }
