@@ -34,10 +34,6 @@ impl Application {
 
     fn d3p1(self, diagram: Diagram) {
         let mut number_list = Vec::new();
-        let mut wrong = 0;
-        for number in &diagram.numbers {
-            wrong += number.value;
-        }
         for symbol in &diagram.symbols {
             number_list.append(&mut find_adjacent_numbers(&diagram.numbers, symbol));
         }
@@ -46,7 +42,6 @@ impl Application {
             answer += number.value;
         }
         println!("{answer}");
-        println!("The max value is {wrong}");
     }
 
     fn d3p2(self) {}
@@ -108,10 +103,6 @@ fn check_next(line: &Vec<char>, pos: usize, num_str: &mut Vec<char>) -> () {
 }
 
 fn find_adjacent_numbers(num_list: &Vec<Number>, symbol: &Symbol) -> Vec<Number> {
-    println!(
-        "\nchecking {} at x={} y={}",
-        symbol.glyph, symbol.x_coord, symbol.y_coord
-    );
     let output: Vec<Number> = num_list
         .clone()
         .into_iter()
@@ -119,10 +110,6 @@ fn find_adjacent_numbers(num_list: &Vec<Number>, symbol: &Symbol) -> Vec<Number>
             (minus_one_or(symbol.y_coord)..=(symbol.y_coord + 1)).contains(&number.y_coord)
         })
         .filter(|number| number.range_check(minus_one_or(symbol.x_coord)..=(symbol.x_coord + 1)))
-        .map(|n| {
-            println!("Found matches:\n{:?}", n);
-            n
-        })
         .collect();
     return output;
 }
