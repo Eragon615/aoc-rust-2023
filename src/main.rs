@@ -18,6 +18,7 @@ fn main() {
     match app.args.day {
         1 => app.day1(),
         2 => app.day2(),
+        3 => app.day3(),
         _ => println!("It is not yet the time..."),
     };
 }
