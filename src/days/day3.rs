@@ -28,7 +28,7 @@ impl Application {
         if self.args.part == 1 {
             self.d3p1(diagram);
         } else {
-            self.d3p2();
+            self.d3p2(diagram);
         }
     }
 
@@ -44,7 +44,22 @@ impl Application {
         println!("{answer}");
     }
 
-    fn d3p2(self) {}
+    fn d3p2(self, diagram: Diagram) {
+        let possible_gears: Vec<Symbol> = diagram
+            .symbols
+            .clone()
+            .into_iter()
+            .filter(|s| s.glyph == '*')
+            .collect();
+        let mut answer = 0;
+        for gear in possible_gears {
+            let adjacent_numbers = find_adjacent_numbers(&diagram.numbers, &gear);
+            if adjacent_numbers.len() == 2 {
+                answer += adjacent_numbers[0].value * adjacent_numbers[1].value;
+            }
+        }
+        println!("{answer}");
+    }
 }
 
 fn map_input(input: &Vec<String>) -> Diagram {
