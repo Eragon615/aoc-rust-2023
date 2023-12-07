@@ -21,13 +21,17 @@ fn main() {
         3 => app.day3(),
         4 => app.day4(),
         5 => app.day5(),
+        6 => app.day6(),
         _ => println!("It is not yet the time..."),
     };
 }
 
 fn setup() -> Application {
     let args = Args::parse();
-    let filename = format!("input{}.txt", &args.day);
+    let filename = match args.sample {
+        false => format!("input/input{}.txt", &args.day),
+        true => format!("sample/input{}.txt", &args.day),
+    };
     let file = File::open(filename).expect("no such file");
     let buf = BufReader::new(file);
     let input: Vec<String> = buf

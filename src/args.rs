@@ -12,4 +12,10 @@ pub struct Args {
     /// Part one or part 2
     #[arg(value_parser = value_parser!(u32).range(1..=2))]
     pub part: u32,
+    /// Use the sample input instead
+    #[arg(short, long)]
+    pub sample: bool,
+    /// The number of threads to use, if programmed for multithreading
+    #[arg(short, long, value_parser = value_parser!(u32).range(1..=32), default_value_t = 1)]
+    pub thread: u32,
 }

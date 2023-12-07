@@ -1,6 +1,8 @@
+use std::{thread, usize};
+
 use crate::Application;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Almanac {
     seeds: Vec<u64>,
     seeds2soil: Vec<AlmRange>,
@@ -12,7 +14,7 @@ struct Almanac {
     humid2loc: Vec<AlmRange>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AlmRange {
     source: u64,
     destination: u64,
@@ -53,26 +55,57 @@ impl Application {
 
     fn d5p2(self, almanac: Almanac) {
         let mut answer = 0;
-        let mut skip = false;
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut vecofvec = Vec::new();
+        for _ in 1..=self.args.thread {
+            vecofvec.push(Vec::new());
+        }
         for i in 0..almanac.seeds.len() {
-            if skip {
-                skip = false;
+            if i % 2 != 0 {
                 continue;
             }
-            for j in almanac.seeds[i]..(almanac.seeds[i] + almanac.seeds[i + 1]) {
-                let location = j
-                    .alm_translate(&almanac.seeds2soil)
-                    .alm_translate(&almanac.soil2fert)
-                    .alm_translate(&almanac.fert2water)
-                    .alm_translate(&almanac.water2light)
-                    .alm_translate(&almanac.light2temp)
-                    .alm_translate(&almanac.temp2humid)
-                    .alm_translate(&almanac.humid2loc);
-                if location < answer || answer == 0 {
-                    answer = location;
+            vecofvec[(i / 2) % self.args.thread as usize]
+                .push(almanac.seeds[i]..(almanac.seeds[i] + almanac.seeds[i + 1]));
+        }
+        for i in 0..self.args.thread {
+            let newtx = tx.clone();
+            let index = i.clone();
+            let newvec = vecofvec.clone();
+            let newalm = almanac.clone();
+            thread::spawn(move || {
+                let mut output = 0;
+                for range in newvec[index as usize].clone() {
+                    for i in range {
+                        let location = i
+                            .alm_translate(&newalm.seeds2soil)
+                            .alm_translate(&newalm.soil2fert)
+                            .alm_translate(&newalm.fert2water)
+                            .alm_translate(&newalm.water2light)
+                            .alm_translate(&newalm.light2temp)
+                            .alm_translate(&newalm.temp2humid)
+                            .alm_translate(&newalm.humid2loc);
+                        if location < output || output == 0 {
+                            output = location;
+                        };
+                    }
+                    newtx.send(output).unwrap();
                 }
+            });
+        }
+        print!("\n");
+        let mut checkin = 1;
+        loop {
+            print!("\rWaiting on thread {checkin}...");
+            if let Ok(output) = rx.try_recv() {
+                println!("Thread {checkin}'s lowest was {output}");
+                if output < answer || answer == 0 {
+                    answer = output;
+                }
+                checkin += 1;
             }
-            skip = true;
+            if checkin > vecofvec.len() {
+                break;
+            }
         }
         println!("{answer}");
     }

@@ -1,0 +1,16 @@
+use crate::Application;
+
+impl Application {
+    pub fn dayX(self) {
+        if self.args.part == 1 {
+            self.dXp1();
+        } else {
+            self.dXp2();
+        }
+    }
+
+    fn dXp1(self) {}
+
+    fn dXp2(self) {}
+}
+
