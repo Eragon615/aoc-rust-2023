@@ -1,5 +1,3 @@
-use std::{thread, usize};
-
 use crate::Application;
 
 #[derive(Debug, Clone)]
@@ -23,6 +21,16 @@ struct AlmRange {
 
 trait AlmTranslate {
     fn alm_translate(self, ranges: &Vec<AlmRange>) -> Self;
+}
+
+trait IntervalChase {
+    fn interval_chase(self, ranges: &Vec<AlmRange>) -> Vec<AlmInterval>;
+}
+
+#[derive(Debug, Clone)]
+struct AlmInterval {
+    start: u64,
+    length: u64,
 }
 
 impl Application {
@@ -55,56 +63,18 @@ impl Application {
 
     fn d5p2(self, almanac: Almanac) {
         let mut answer = 0;
-        let (tx, rx) = std::sync::mpsc::channel();
-        let mut vecofvec = Vec::new();
-        for _ in 1..=self.args.thread {
-            vecofvec.push(Vec::new());
-        }
-        for i in 0..almanac.seeds.len() {
-            if i % 2 != 0 {
-                continue;
-            }
-            vecofvec[(i / 2) % self.args.thread as usize]
-                .push(almanac.seeds[i]..(almanac.seeds[i] + almanac.seeds[i + 1]));
-        }
-        for i in 0..self.args.thread {
-            let newtx = tx.clone();
-            let index = i.clone();
-            let newvec = vecofvec.clone();
-            let newalm = almanac.clone();
-            thread::spawn(move || {
-                let mut output = 0;
-                for range in newvec[index as usize].clone() {
-                    for i in range {
-                        let location = i
-                            .alm_translate(&newalm.seeds2soil)
-                            .alm_translate(&newalm.soil2fert)
-                            .alm_translate(&newalm.fert2water)
-                            .alm_translate(&newalm.water2light)
-                            .alm_translate(&newalm.light2temp)
-                            .alm_translate(&newalm.temp2humid)
-                            .alm_translate(&newalm.humid2loc);
-                        if location < output || output == 0 {
-                            output = location;
-                        };
-                    }
-                    newtx.send(output).unwrap();
-                }
-            });
-        }
-        print!("\n");
-        let mut checkin = 1;
-        loop {
-            print!("\rWaiting on thread {checkin}...");
-            if let Ok(output) = rx.try_recv() {
-                println!("Thread {checkin}'s lowest was {output}");
-                if output < answer || answer == 0 {
-                    answer = output;
-                }
-                checkin += 1;
-            }
-            if checkin > vecofvec.len() {
-                break;
+        let intervals = seeds_to_intervals(&almanac.seeds);
+        let locations = intervals
+            .interval_chase(&almanac.seeds2soil)
+            .interval_chase(&almanac.soil2fert)
+            .interval_chase(&almanac.fert2water)
+            .interval_chase(&almanac.water2light)
+            .interval_chase(&almanac.light2temp)
+            .interval_chase(&almanac.temp2humid)
+            .interval_chase(&almanac.humid2loc);
+        for location in locations {
+            if location.start < answer || answer == 0 {
+                answer = location.start;
             }
         }
         println!("{answer}");
@@ -121,6 +91,58 @@ impl AlmTranslate for u64 {
             output = range.destination + (self - range.source);
             if output != self {
                 break;
+            }
+        }
+        return output;
+    }
+}
+
+impl IntervalChase for Vec<AlmInterval> {
+    fn interval_chase(self, ranges: &Vec<AlmRange>) -> Vec<AlmInterval> {
+        let mut output: Vec<AlmInterval> = Vec::new();
+        for interval in self {
+            let mut begin = interval.start;
+            let mut viable = Vec::new();
+            for range in ranges {
+                if range.source <= (interval.start + interval.length)
+                    && (range.source + range.length) >= interval.start
+                {
+                    viable.push(range)
+                }
+            }
+            if viable.len() == 0 {
+                // If none of the ranges matter
+                output.push(interval);
+                continue;
+            }
+            viable.sort_by(|b, a| b.source.cmp(&a.source));
+            for vi in viable {
+                if begin < vi.source {
+                    // This should pick out gaps between ranges
+                    let start = begin;
+                    let length = vi.source - begin;
+                    output.push(AlmInterval { start, length });
+                    begin = vi.source;
+                }
+                let start = vi.destination + (begin - vi.source);
+                if (vi.source + vi.length) > (interval.start + interval.length) {
+                    // If the interval ends before the range
+                    let length = (interval.start + interval.length) - begin;
+                    output.push(AlmInterval { start, length });
+                    begin += length;
+                } else {
+                    // If the range ends before the interval
+                    let length = (vi.source + vi.length) - begin;
+                    output.push(AlmInterval { start, length });
+                    begin += length;
+                }
+            }
+            if begin < (interval.start + interval.length) {
+                // Catch the end if it's after the last AlmRange
+                output.push(AlmInterval {
+                    start: begin,
+                    length: (interval.start + interval.length) - begin,
+                })
             }
         }
         return output;
@@ -203,4 +225,21 @@ fn get_seeds(input: &String) -> Vec<u64> {
         .split_whitespace()
         .map(|n| n.parse().expect("You screwed up parsing the seeds"))
         .collect();
+}
+
+fn seeds_to_intervals(input: &Vec<u64>) -> Vec<AlmInterval> {
+    let mut output = Vec::new();
+    let mut skip = false;
+    for i in 0..input.len() {
+        if skip {
+            skip = false;
+            continue;
+        }
+        output.push(AlmInterval {
+            start: input[i],
+            length: input[i + 1],
+        });
+        skip = true;
+    }
+    return output;
 }
