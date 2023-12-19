@@ -8,16 +8,16 @@ struct CardGame {
     wager: u64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[repr(u64)]
 enum HandType {
-    FiveOfAKind(Card) = 7,
-    FourOfAKind(Card) = 6,
-    FullHouse(Card, Card) = 5,
-    ThreeOfAKind(Card) = 4,
-    TwoPair(Card, Card) = 3,
-    OnePair(Card) = 2,
-    HighCard(Card) = 1,
+    FiveOfAKind = 7,
+    FourOfAKind = 6,
+    FullHouse = 5,
+    ThreeOfAKind = 4,
+    TwoPair = 3,
+    OnePair = 2,
+    HighCard = 1,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -46,7 +46,7 @@ impl Application {
         if self.args.part == 1 {
             self.d7p1(games);
         } else {
-            self.d7p2();
+            self.d7p2(games);
         }
     }
 
@@ -60,7 +60,18 @@ impl Application {
         println!("{answer}");
     }
 
-    fn d7p2(self) {}
+    fn d7p2(self, input: Vec<CardGame>) {
+        let mut answer = 0;
+        let mut input = input
+            .iter()
+            .map(|g| g.clone().promote_hand())
+            .collect::<Vec<CardGame>>();
+        input.sort_by(|a, b| a.compare_hands_v2(&b));
+        for i in 0..input.len() {
+            answer += input[i].wager * (i as u64 + 1);
+        }
+        println!("{answer}");
+    }
 }
 
 fn parse_hands(input: &Vec<String>) -> Vec<CardGame> {
@@ -117,86 +128,36 @@ fn detect_type(input: &Hand) -> HandType {
     }
     if handhash.len() == 1 {
         // This must be 5 of a kind
-        return HandType::FiveOfAKind(find_highcard(&handhash));
+        return HandType::FiveOfAKind;
     }
     if handhash.len() == 2 {
         handhash.retain(|_, &mut n| n > 1);
         if handhash.len() == 1 {
-            return HandType::FourOfAKind(find_highcard(&handhash));
+            return HandType::FourOfAKind;
         } else {
-            let (x, y) = find_fullhouse_high(&handhash);
-            return HandType::FullHouse(x, y);
+            return HandType::FullHouse;
         }
     }
     if handhash.len() == 3 {
         handhash.retain(|_, &mut n| n > 1);
         if handhash.len() == 1 {
-            return HandType::ThreeOfAKind(find_highcard(&handhash));
+            return HandType::ThreeOfAKind;
         } else {
-            let (x, y) = find_two_highcards(&handhash);
-            return HandType::TwoPair(x, y);
+            return HandType::TwoPair;
         }
     }
     if handhash.len() == 4 {
         handhash.retain(|_, &mut n| n > 1);
-        return HandType::OnePair(find_highcard(&handhash));
+        return HandType::OnePair;
     }
-    return HandType::HighCard(find_highcard(&handhash));
-}
-
-fn find_highcard(input: &HashMap<Card, u64>) -> Card {
-    let mut output = Card::Two;
-    for (card, _) in input {
-        if *card as u64 > output as u64 {
-            output = *card;
-        }
-    }
-    return output;
-}
-
-fn find_two_highcards(input: &HashMap<Card, u64>) -> (Card, Card) {
-    let mut keys = input.clone().into_keys();
-    let out1 = keys.next().expect("Here's hoping");
-    let out2 = keys.next().expect("This works");
-    if out1 as u64 > out2 as u64 {
-        return (out1, out2);
-    } else {
-        return (out2, out1);
-    }
-}
-
-fn find_fullhouse_high(input: &HashMap<Card, u64>) -> (Card, Card) {
-    let mut out3 = Card::Two;
-    let mut out2 = Card::Two;
-    for (k, v) in input {
-        if *v == 3 {
-            out3 = *k;
-        } else {
-            out2 = *k;
-        }
-    }
-    return (out3, out2);
-}
-
-impl HandType {
-    fn numeric_value(&self) -> u64 {
-        match self {
-            HandType::FiveOfAKind(_) => 7,
-            HandType::FourOfAKind(_) => 6,
-            HandType::FullHouse(_, _) => 5,
-            HandType::ThreeOfAKind(_) => 4,
-            HandType::TwoPair(_, _) => 3,
-            HandType::OnePair(_) => 2,
-            HandType::HighCard(_) => 1,
-        }
-    }
+    return HandType::HighCard;
 }
 
 impl CardGame {
     fn compare_hands(&self, other: &CardGame) -> Ordering {
-        if self.handtype.numeric_value() > other.handtype.numeric_value() {
+        if self.handtype as u64 > other.handtype as u64 {
             return Ordering::Greater;
-        } else if self.handtype.numeric_value() < other.handtype.numeric_value() {
+        } else if (self.handtype as u64) < (other.handtype as u64) {
             return Ordering::Less;
         } else {
             for i in 0..self.hand.len() {
@@ -208,5 +169,66 @@ impl CardGame {
             }
         }
         panic!("Somehow they're the same!");
+    }
+
+    fn compare_hands_v2(&self, other: &CardGame) -> Ordering {
+        if self.handtype as u64 > other.handtype as u64 {
+            return Ordering::Greater;
+        } else if (self.handtype as u64) < (other.handtype as u64) {
+            return Ordering::Less;
+        } else {
+            for i in 0..self.hand.len() {
+                if self.hand[i].game2_val() > other.hand[i].game2_val() {
+                    return Ordering::Greater;
+                } else if self.hand[i].game2_val() < other.hand[i].game2_val() {
+                    return Ordering::Less;
+                }
+            }
+        }
+        panic!("V2 messed up comparing");
+    }
+
+    fn promote_hand(self) -> Self {
+        let mut input = self.to_owned();
+        let jokers = self.find_jokers();
+        if jokers == 0 {
+            return input;
+        }
+        match input.handtype {
+            HandType::FiveOfAKind => {}
+            HandType::FourOfAKind => input.handtype = HandType::FiveOfAKind,
+            HandType::FullHouse => input.handtype = HandType::FiveOfAKind,
+            HandType::ThreeOfAKind => input.handtype = HandType::FourOfAKind,
+            HandType::TwoPair => {
+                if jokers == 1 {
+                    input.handtype = HandType::FullHouse;
+                } else if jokers == 2 {
+                    input.handtype = HandType::FourOfAKind;
+                }
+            }
+            HandType::OnePair => input.handtype = HandType::ThreeOfAKind,
+            HandType::HighCard => input.handtype = HandType::OnePair,
+        }
+        return input;
+    }
+
+    fn find_jokers(&self) -> u64 {
+        let mut output = 0;
+        for card in self.hand {
+            if card == Card::Jack {
+                output += 1;
+            }
+        }
+        return output;
+    }
+}
+
+impl Card {
+    fn game2_val(&self) -> u64 {
+        if *self == Card::Jack {
+            return 1;
+        } else {
+            return *self as u64;
+        }
     }
 }
