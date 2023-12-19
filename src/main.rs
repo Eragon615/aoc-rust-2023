@@ -23,6 +23,7 @@ fn main() {
         5 => app.day5(),
         6 => app.day6(),
         7 => app.day7(),
+        8 => app.day8(),
         _ => println!("It is not yet the time..."),
     };
 }
