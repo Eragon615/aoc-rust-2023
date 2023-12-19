@@ -22,7 +22,7 @@ impl Application {
         if self.args.part == 1 {
             self.d8p1(directions, map);
         } else {
-            self.d8p2();
+            self.d8p2(directions, map);
         }
     }
 
@@ -45,7 +45,37 @@ impl Application {
         println!("{answer}");
     }
 
-    fn d8p2(self) {}
+    fn d8p2(self, directions: Vec<Direction>, map: DesertMap) {
+        let mut answer = 0;
+        let mut distances = Vec::new();
+        let locations: Vec<String> = map
+            .keys()
+            .filter(|k| k.ends_with('A'))
+            .map(|k| k.to_owned())
+            .collect();
+        for location in locations {
+            let mut curloc = location.clone();
+            let mut endloc = location.clone();
+            let _ = endloc.pop();
+            endloc.push('Z');
+            loop {
+                let mut distance = 0;
+                let mut stop = false;
+                for d in &directions {
+                    curloc = follow_map(&map, curloc, &d);
+                    distance += 1;
+                    if location == "ZZZ".to_string() {
+                        stop = true;
+                    }
+                }
+                if stop {
+                    distances.push(distance);
+                    break;
+                }
+            }
+        }
+        println!("{:?}", distances);
+    }
 }
 
 fn parse_map(input: &Vec<String>) -> (Vec<Direction>, DesertMap) {
