@@ -55,16 +55,13 @@ impl Application {
             .collect();
         for location in locations {
             let mut curloc = location.clone();
-            let mut endloc = location.clone();
-            let _ = endloc.pop();
-            endloc.push('Z');
+            let mut distance = 0;
             loop {
-                let mut distance = 0;
                 let mut stop = false;
                 for d in &directions {
                     curloc = follow_map(&map, curloc, &d);
                     distance += 1;
-                    if location == "ZZZ".to_string() {
+                    if check_end(&curloc) {
                         stop = true;
                     }
                 }
@@ -114,6 +111,16 @@ fn follow_map(map: &DesertMap, key: String, direction: &Direction) -> String {
     let node = map.get(&key).expect("Looked up a node that doesn't exist");
     let output = node.left_or_right(direction);
     return output;
+}
+
+fn check_end(input: &String) -> bool {
+    let mut data = input.clone();
+    if let Some(letter) = data.pop() {
+        if letter == 'Z' {
+            return true;
+        }
+    }
+    return false;
 }
 
 impl Node {
