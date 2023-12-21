@@ -132,3 +132,9 @@ impl Node {
         return output.to_owned();
     }
 }
+
+fn vec_lcm(input: Vec<u64>) -> u64 {
+    // I need to come back and write this,
+    // instead of just using Wolfram Alpha
+    todo!()
+}
