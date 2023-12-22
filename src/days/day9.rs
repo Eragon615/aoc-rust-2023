@@ -1,4 +1,5 @@
 use crate::Application;
+use std::ops::Neg;
 
 impl Application {
     pub fn day9(self) {
@@ -35,5 +36,47 @@ fn parse_input(input: &Vec<String>) -> Vec<Vec<i64>> {
 }
 
 fn find_next(input: &Vec<i64>) -> i64 {
-    todo!()
+    let output;
+    let mut deepness = 0;
+    let mut working_vec = Vec::new();
+    working_vec.push(input.clone());
+    loop {
+        let new_line = next_row(&working_vec[deepness]);
+        deepness += 1;
+        working_vec.push(new_line);
+        if all_zero(&working_vec[deepness]) {
+            break;
+        }
+    }
+    loop {
+        let curlast = working_vec[deepness].last().unwrap_or(&0);
+        let prevlast = working_vec[deepness - 1]
+            .last()
+            .expect("We didn't go deep enough");
+        let nextnum = curlast + prevlast;
+        deepness -= 1;
+        if deepness == 0 {
+            output = nextnum;
+            break;
+        }
+        working_vec[deepness].push(nextnum);
+    }
+    return output;
+}
+
+fn next_row(input: &Vec<i64>) -> Vec<i64> {
+    let mut output = Vec::new();
+    for i in 0..(input.len() - 1) {
+        output.push(input[i + 1] - input[i]);
+    }
+    return output;
+}
+
+fn all_zero(input: &Vec<i64>) -> bool {
+    for i in input {
+        if *i != 0 {
+            return false;
+        }
+    }
+    return true;
 }
