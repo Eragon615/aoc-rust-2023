@@ -1,5 +1,4 @@
 use crate::Application;
-use std::ops::Neg;
 
 impl Application {
     pub fn day9(self) {
@@ -7,7 +6,7 @@ impl Application {
         if self.args.part == 1 {
             self.d9p1(oasis);
         } else {
-            self.d9p2();
+            self.d9p2(oasis);
         }
     }
 
@@ -19,7 +18,13 @@ impl Application {
         println!("{answer}");
     }
 
-    fn d9p2(self) {}
+    fn d9p2(self, oasis: Vec<Vec<i64>>) {
+        let mut answer = 0;
+        for num_vec in oasis {
+            answer += find_prev(&num_vec);
+        }
+        println!("{answer}");
+    }
 }
 
 fn parse_input(input: &Vec<String>) -> Vec<Vec<i64>> {
@@ -60,6 +65,35 @@ fn find_next(input: &Vec<i64>) -> i64 {
             break;
         }
         working_vec[deepness].push(nextnum);
+    }
+    return output;
+}
+
+fn find_prev(input: &Vec<i64>) -> i64 {
+    let output;
+    let mut deepness = 0;
+    let mut working_vec = Vec::new();
+    working_vec.push(input.clone());
+    loop {
+        let new_line = next_row(&working_vec[deepness]);
+        deepness += 1;
+        working_vec.push(new_line);
+        if all_zero(&working_vec[deepness]) {
+            break;
+        }
+    }
+    loop {
+        let curfirst = working_vec[deepness].first().unwrap_or(&0);
+        let prevfirst = working_vec[deepness - 1]
+            .first()
+            .expect("Backed into a cop");
+        let nextnum = prevfirst - curfirst;
+        deepness -= 1;
+        if deepness == 0 {
+            output = nextnum;
+            break;
+        }
+        working_vec[deepness].insert(0, nextnum);
     }
     return output;
 }
