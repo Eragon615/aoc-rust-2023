@@ -1,16 +1,16 @@
 use crate::Application;
 
 impl Application {
-    pub fn dayX(self) {
+    pub fn dayXX(self) {
         if self.args.part == 1 {
-            self.dXp1();
+            self.dXXp1();
         } else {
-            self.dXp2();
+            self.dXXp2();
         }
     }
 
-    fn dXp1(self) {}
+    fn dXXp1(self) {}
 
-    fn dXp2(self) {}
+    fn dXXp2(self) {}
 }
 
